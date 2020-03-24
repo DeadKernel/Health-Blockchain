@@ -15,9 +15,12 @@
     "author": "Hyperledger",
     "license": "Apache-2.0",
     "dependencies": {
+        "body-parser": "^1.19.0",
+        "cors": "^2.8.5",
         "express": "^4.17.1",
         "fabric-ca-client": "beta",
-        "fabric-network": "beta"
+        "fabric-network": "beta",
+        "uuid": "^7.0.2"
     },
     "devDependencies": {
         "chai": "^4.2.0",
