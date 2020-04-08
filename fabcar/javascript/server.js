@@ -213,7 +213,7 @@ app.post('/api/register', function(req,res){
             // Disconnect from the gateway.
             await gateway.disconnect();
 
-            res.status(200).json({token: 'abcdefg'});
+            res.status(200).json({data:{token: email}});
             
     
         } catch (error) {
@@ -225,6 +225,65 @@ app.post('/api/register', function(req,res){
     
     main();
     
+})
+
+app.post('/api/addPatientDetails', function(req,res){
+    let patientDetails = {
+        email: req.body.email,
+        gender: req.body.gender,
+        dob: req.body.dob,
+        height: req.body.height,
+        weight: req.body.weight,
+        conditions: req.body.conditions,
+        allergies: req.body.allergies
+    };
+
+    async function main() {
+        try {
+            // load the network configuration
+            const ccpPath = path.resolve(__dirname, '..', '..', 'first-network', 'connection-org1.json');
+            const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+    
+            // Create a new file system based wallet for managing identities.
+            const walletPath = path.join(process.cwd(), 'wallet');
+            const wallet = await Wallets.newFileSystemWallet(walletPath);
+            console.log(`Wallet path: ${walletPath}`);
+    
+            // Check to see if we've already enrolled the user.
+            const identity = await wallet.get(patientDetails.email);
+            if (!identity) {
+                console.log('An identity for the user '+patientDetails.email+' does not exist in the wallet');
+                console.log('Run the registerUser.js application before retrying');
+                return;
+            }
+    
+            // Create a new gateway for connecting to our peer node.
+            const gateway = new Gateway();
+            await gateway.connect(ccp, { wallet, identity: patientDetails.email, discovery: { enabled: true, asLocalhost: true } });
+    
+            // Get the network (channel) our contract is deployed to.
+            const network = await gateway.getNetwork('mychannel');
+    
+            // Get the contract from the network.
+            const contract = network.getContract('fabcar');
+    
+            await contract.submitTransaction('addPatientDetails',JSON.stringify(patientDetails));
+            console.log('Transaction has been submitted');
+
+            // Disconnect from the gateway.
+            await gateway.disconnect();
+
+            res.status(200).json({Description: 'Patient Details added'});
+            
+    
+        } catch (error) {
+            console.error(`Failed to add patient details `+patientDetails.email+`: ${error}`);
+            res.status(500).json({error: `${error}`})
+            process.exit(1);
+        }
+    }
+    main();
+
 })
 
 app.post('/api/login', function(req,res){

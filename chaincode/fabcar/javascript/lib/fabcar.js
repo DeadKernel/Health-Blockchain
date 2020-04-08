@@ -19,7 +19,15 @@ class FabCar extends Contract {
                 weight: '70kg',
                 auth : {
                     password: 'password'
-                }
+                },
+                conditions: [
+                    'Hypertension',
+                    'Diabetes'
+                ],
+                allergies: [
+                    'Peanuts',
+                    'Penicillin'
+                ]
             },
          
         ];
@@ -81,19 +89,24 @@ class FabCar extends Contract {
         return JSON.stringify(allResults);
     }
 
-    // async changeCarOwner(ctx, patientId, newOwner) {
-    //     console.info('============= START : changeCarOwner ===========');
+    async addPatientDetails(ctx, patientInfo) {
+        console.info('============= START : addPatientDetails ===========');
+        let patientInfoObj = JSON.parse(patientInfo);
+        const patientAsBytes = await ctx.stub.getState(patientInfoObj.email); // get the car from chaincode state
+        if (!patientAsBytes || patientAsBytes.length === 0) {
+            throw new Error(`${patientInfoObj.email} does not exist`);
+        }
+        const patient = JSON.parse(patientAsBytes.toString());
+        patient.gender = patientInfoObj.gender;
+        patient.dob = patientInfoObj.dob;
+        patient.height = patientInfoObj.height;
+        patient.weight = patientInfoObj.weight;
+        patient.conditions = patientInfoObj.conditions;
+        patient.allergies = patientInfoObj.allergies;
 
-    //     const patientAsBytes = await ctx.stub.getState(patientId); // get the car from chaincode state
-    //     if (!patientAsBytes || patientAsBytes.length === 0) {
-    //         throw new Error(`${patientId} does not exist`);
-    //     }
-    //     const car = JSON.parse(patientAsBytes.toString());
-    //     car.owner = newOwner;
-
-    //     await ctx.stub.putState(patientId, Buffer.from(JSON.stringify(car)));
-    //     console.info('============= END : changeCarOwner ===========');
-    // }
+        await ctx.stub.putState(patientInfoObj.email, Buffer.from(JSON.stringify(patient)));
+        console.info('============= END : addPatientDetails ===========');
+    }
 
 }
 
