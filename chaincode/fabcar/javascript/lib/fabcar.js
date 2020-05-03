@@ -64,9 +64,28 @@ class FabCar extends Contract {
            },
            docType: 'patient'
         };
-
+        
         await ctx.stub.putState(patient.email, Buffer.from(JSON.stringify(patient)));
         console.info('============= END : Create Patient ===========');
+    }
+
+    async createDoctor(ctx, doctorInfo) {
+        console.info('============= START : Create Doctor ===========');
+        let doctorInfoObj = JSON.parse(doctorInfo);
+        const doctor = {
+            fullName: doctorInfoObj.fullName,
+            email: doctorInfoObj.email,
+            gender: doctorInfoObj.gender,
+            dob: doctorInfoObj.dob,
+            height: doctorInfoObj.height,
+            weight: doctorInfoObj.weight,
+            auth: {
+                password: doctorInfoObj.auth.password
+            },
+            docType: 'doctor'
+        };
+        await ctx.stub.putState(doctor.email, Buffer.from(JSON.stringify(doctor)));
+        console.info('============= END : Create Doctor ===========');
     }
 
     async queryAllPatients(ctx) {
@@ -89,6 +108,24 @@ class FabCar extends Contract {
         return JSON.stringify(allResults);
     }
 
+    async addDoctorDetails(ctx, doctorInfo) {
+        console.info('============= START : addDoctorDetails ===========');
+        let doctorInfoObj = JSON.parse(doctorInfo);
+        const doctorAsBytes = await ctx.stub.getState(doctorInfoObj.email); // get the car from chaincode state
+        if (!doctorAsBytes || doctorAsBytes.length === 0) {
+            throw new Error(`${doctorInfoObj.email} does not exist`);
+        }
+        const doctor = JSON.parse(doctorAsBytes.toString());
+        doctor.gender = doctorInfoObj.gender;
+        doctor.dob = doctorInfoObj.dob;
+        doctor.qualifications = doctorInfoObj.qualifications;
+        doctor.docID = doctorInfoObj.docID;
+        
+
+        await ctx.stub.putState(doctorInfoObj.email, Buffer.from(JSON.stringify(doctor)));
+        console.info('============= END : addDoctorDetails ===========');
+    }
+
     async addPatientDetails(ctx, patientInfo) {
         console.info('============= START : addPatientDetails ===========');
         let patientInfoObj = JSON.parse(patientInfo);
@@ -107,6 +144,8 @@ class FabCar extends Contract {
         await ctx.stub.putState(patientInfoObj.email, Buffer.from(JSON.stringify(patient)));
         console.info('============= END : addPatientDetails ===========');
     }
+
+    
 
 }
 
