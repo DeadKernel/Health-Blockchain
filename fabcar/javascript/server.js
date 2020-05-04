@@ -126,6 +126,7 @@ app.post('/api/register', function(req,res){
     var weight = req.body.weight;
     var gender = req.body.gender;
     var dob = req.body.dob;
+    var option = req.body.option;
     console.log(password)
     async function main() {
         try {
@@ -195,20 +196,41 @@ app.post('/api/register', function(req,res){
             // Submit the specified transaction.
             // createCar transaction - requires 5 argument, ex: ('createCar', 'CAR12', 'Honda', 'Accord', 'Black', 'Tom')
             // changeCarOwner transaction - requires 2 args , ex: ('changeCarOwner', 'CAR10', 'Dave')
-            let patientInfo = {
-                fullName: fullName,
-                email: email,
-                gender: gender,
-                dob: dob,
-                height: height,
-                weight: weight,
-                auth: {
-                    password: password
-                },
-                docType: 'patient'
+
+            if(option=="patient")
+            {
+                let patientInfo = {
+                    fullName: fullName,
+                    email: email,
+                    gender: gender,
+                    dob: dob,
+                    height: height,
+                    weight: weight,
+                    auth: {
+                        password: password
+                    },
+                    docType: 'patient'
+                }
+                await contract.submitTransaction('createPatient',JSON.stringify(patientInfo));
+                console.log('Transaction has been submitted');
             }
-            await contract.submitTransaction('createPatient',JSON.stringify(patientInfo));
-            console.log('Transaction has been submitted');
+            else{
+                let doctorInfo = {
+                    fullName: fullName,
+                    email: email,
+                    gender: gender,
+                    dob: dob,
+                    height: height,
+                    weight: weight,
+                    auth: {
+                        password: password
+                    },
+                    docType: 'doctor'
+                }
+                await contract.submitTransaction('createDoctor',JSON.stringify(doctorInfo));
+                console.log('Transaction has been submitted');
+
+            }
 
             // Disconnect from the gateway.
             await gateway.disconnect();
@@ -278,6 +300,63 @@ app.post('/api/addPatientDetails', function(req,res){
     
         } catch (error) {
             console.error(`Failed to add patient details `+patientDetails.email+`: ${error}`);
+            res.status(500).json({error: `${error}`})
+            process.exit(1);
+        }
+    }
+    main();
+
+})
+
+app.post('/api/addDoctorDetails', function(req,res){
+    let doctorDetails = {
+        email: req.body.email,
+        gender: req.body.gender,
+        dob: req.body.dob,
+        qualifications: req.body.qualifications,
+        docID: req.body.docID
+    };
+
+    async function main() {
+        try {
+            // load the network configuration
+            const ccpPath = path.resolve(__dirname, '..', '..', 'first-network', 'connection-org1.json');
+            const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+    
+            // Create a new file system based wallet for managing identities.
+            const walletPath = path.join(process.cwd(), 'wallet');
+            const wallet = await Wallets.newFileSystemWallet(walletPath);
+            console.log(`Wallet path: ${walletPath}`);
+    
+            // Check to see if we've already enrolled the user.
+            const identity = await wallet.get(doctorDetails.email);
+            if (!identity) {
+                console.log('An identity for the user '+doctorDetails.email+' does not exist in the wallet');
+                console.log('Run the registerUser.js application before retrying');
+                return;
+            }
+    
+            // Create a new gateway for connecting to our peer node.
+            const gateway = new Gateway();
+            await gateway.connect(ccp, { wallet, identity: doctorDetails.email, discovery: { enabled: true, asLocalhost: true } });
+    
+            // Get the network (channel) our contract is deployed to.
+            const network = await gateway.getNetwork('mychannel');
+    
+            // Get the contract from the network.
+            const contract = network.getContract('fabcar');
+    
+            await contract.submitTransaction('addDoctorDetails',JSON.stringify(doctorDetails));
+            console.log('Transaction has been submitted');
+
+            // Disconnect from the gateway.
+            await gateway.disconnect();
+
+            res.status(200).json({Description: 'Doctor Details added'});
+            
+    
+        } catch (error) {
+            console.error(`Failed to add doctor details `+doctorDetails.email+`: ${error}`);
             res.status(500).json({error: `${error}`})
             process.exit(1);
         }
