@@ -1,6 +1,5 @@
 // adiaholic: this is to initialise google apis for google drive through nodeJS
 const fs = require('fs');
-
 const readline = require('readline');
 const {google} = require('googleapis');
 
@@ -13,109 +12,109 @@ const SCOPES = ['https://www.googleapis.com/auth/drive'];
 // time.
 const TOKEN_PATH = 'token.json';
 
+var propertiesPath = './properties.json';
+var config_data = require(propertiesPath);
+
 // Load client secrets from a local file.
 fs.readFile('credentials.json', (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
-  
   // Authorize a client with credentials, then call the Google Drive API.
-  authorize(JSON.parse(content), createAndInsert);
-  });
+  authorize(JSON.parse(content), downloading);
+});
 
-function createAndInsert(auth) {
+ decrypting();
 
-  // The ID of the folder
-  var folderID;
+/**
+ * Defining the async decrypting function
+*/
+async function decrypting() {
+  // Adding virtu
+  const Virtru = require('virtru-sdk');
+  var fs = require('fs');
 
-  // Create folder
-  var fileMetadata = {
-    'name': 'Folder',
-    'mimeType': 'application/vnd.google-apps.folder'
-  };
+  const email = 'projectpict17@gmail.com';
+  const appId = 'db5ba273-4ea3-495d-ada6-2293df3c1134';
+  const sourceDir = '/home/adiaholic/Desktop/GD/encrypted';
+  const destDir = '/home/adiaholic/Desktop/GD/decrypted';
+  const client = new Virtru.Client({email, appId});
+
+  console.log("Virtru details obtained");
+
+  // For each file in the directory, decrypt using the helper function.
+  promises = fs.readdirSync(sourceDir).map(filename => decrypt(filename));
+  // Wait for all operations to finish, then write a completion message.
+  Promise.all(promises).then(() => 
+  console.log(`All files in ${sourceDir} have been decrypted and written to ${destDir}!`));
+ 
+  // Decrypt the file
+  async function decrypt(uFileName, fileName){
+
+    console.log("uFileName",uFileName);
+
+    try {
+      const decryptParams = new Virtru.DecryptParamsBuilder()
+      .withFileSource(`${sourceDir}/${uFileName}`)
+      .build();
+
+      var array = uFileName.split('.');
+      var decryptFileName = `${array[0]}`;
+      decryptFileName += `.${array[1]}`;
+
+      const stream = await client.decrypt(decryptParams);
+      await stream.toFile(`/home/adiaholic/Desktop/GD/decrypted/${decryptFileName}`);
+
+    } catch(err) {
+      console.log(err);
+    }
+  }
+}
+
+
+/**
+  * The async download function
+**/
+async function downloading(auth) {
+
+  try {
+    var folderID = config_data[`folderID`];
+    // downloading(auth,folderID);
+  } catch(err) {
+    console.log("Error accessing properties or downloading",err);
+  }   
+
   const drive = google.drive({version: 'v3', auth});
-  
-  //Creates folder
-  drive.files.create({
-    resource: fileMetadata,
-    fields: 'id'
-  }).then(function (response) {
-		  folderID = response.data.id;
-	    console.log("adiaholic: FolderID",folderID);
-
-      var propertiesPath = './properties.json';
-      var config_data = require(propertiesPath);
-
-      try {
-        config_data[`folderID`] = folderID;
-        console.log("Json : ",config_data);
-
-        // stringify JSON Object
-        var jsonContent = JSON.stringify(config_data);
-        console.log(jsonContent);
-         
-        var fs = require('fs');
-
-        fs.writeFileSync("./properties.json", jsonContent, 'utf8', function (err) {
-            if (err) {
-                console.log("An error occured while writing JSON Object to File.");
-                return console.log(err);
-            }
-          })
-
-      } catch(err) {
-        console.log("Error creating properties",err);
-      }
-
-      // Adding virtu
-      const Virtru = require('virtru-sdk');
-      var fs = require('fs');
-
-      const email = 'projectpict17@gmail.com';
-      const appId = 'db5ba273-4ea3-495d-ada6-2293df3c1134';
-      const sourceDir = '/home/adiaholic/Desktop/GD/input';
-      const destDir = '/home/adiaholic/Desktop/GD/encrypted';
-
-      // For Encryption
-      // Initialize the client.
-      const client = new Virtru.Client({email, appId});
-      
-      // For each file in the directory, encrypt using the helper function.
-      promises = fs.readdirSync(sourceDir).map(filename => encrypt(filename));
-      // Wait for all operations to finish, then write a completion message.
-      Promise.all(promises).then(() => 
-        console.log(`All files in ${sourceDir} have been encrypted and written to ${destDir}!`));
-
-      var encryptFile;
-
-      async function encrypt(filename) {
-        const encryptParams = new Virtru.EncryptParamsBuilder()
-          .withFileSource(`${sourceDir}/${filename}`)
-          .build();
-        encryptFile = await client.encrypt(encryptParams);
-        
-        // This will create an encypted file on local machine
-        //encryptFile.toFile(`${destDir}/${filename}.tdf3.html`);
-
-        //Inserts file inside folder
-        var fileMetadata = {
-        'name': `${filename}.tdf3.html`,
-        parents: [folderID]
-        };
-        var media = {
-          mimeType: 'image/jpeg',
-          body: encryptFile
-        };
-        drive.files.create({
-          resource: fileMetadata,
-          media: media,
-          fields: 'id'
-        }).then(function (response) {
-          console.log("adiaholic: FileID",response.data.id);
-        },
-         function(err) {
-          console.error("Execute Error", err);
-         });
-      }
-    })
+  await drive.files.list({
+      fields: 'nextPageToken, files(id, name)',
+      q: `'${folderID}' in parents and name contains "tdf3.html" and trashed = false`
+    }, (err, res) => {
+        if (err) return console.log('The API returned an error: ' + err);
+        // Generate list of files.
+        const files = res.data.files;
+        if (files.length) {
+          files.map((file) => {
+            // Get name and ID of each file.
+            var fileId = file.id;
+            var fileName = file.name;
+            var dest = fs.createWriteStream(`/home/adiaholic/Desktop/GD/encrypted/${fileName}`);
+            drive.files.get({                    // Begin download request for file by ID.
+              fileId: fileId,
+              alt: 'media'
+            }, {
+              responseType: 'stream'
+            }, function(err, res) {
+              res.data
+              .on('end', () => {
+                console.log('Done.');
+              })
+              .on('error', err => {
+                  console.log(err);
+              })
+              .pipe(dest);
+            });
+          });
+        }
+      });
+    console.log("Download complete");
   }
 
 /**
