@@ -13,7 +13,7 @@ const FabricCAServices = require('fabric-ca-client');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
-app.get('/api/getAllPatients', function(req, res){
+app.get('/api/getAllUsers', function(req, res){
     var email = req.query.email;
     async function main() {
         try {
@@ -48,7 +48,58 @@ app.get('/api/getAllPatients', function(req, res){
             // queryCar transaction - requires 1 argument, ex: ('queryCar', 'CAR4')
             // queryAllCars transaction - requires no arguments, ex: ('queryAllCars')
 
-            const result = await contract.evaluateTransaction('queryAllPatients');
+            const result = await contract.evaluateTransaction('queryAllUsers');
+            console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
+            res.status(200).send({response: JSON.parse(`${result}`)})
+    
+        } catch (error) {
+            console.error(`Failed to evaluate transaction: ${error}`);
+            res.status(500).json({error: `${error}`})
+            process.exit(1);
+        }
+    }
+    
+    main();
+    
+}) 
+
+app.get('/api/getAccType', function(req, res){
+    var email = req.query.email;
+    var opt = req.query.opt;  //opt = doctor OR opt = patient
+    async function main() {
+        try {
+            // load the network configuration
+            const ccpPath = path.resolve(__dirname, '..', '..', 'first-network', 'connection-org1.json');
+            const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+    
+            // Create a new file system based wallet for managing identities.
+            const walletPath = path.join(process.cwd(), 'wallet');
+            const wallet = await Wallets.newFileSystemWallet(walletPath);
+            console.log(`Wallet path: ${walletPath}`);
+    
+            // Check to see if we've already enrolled the user.
+            const identity = await wallet.get(email);
+            if (!identity) {
+                console.log('An identity for the user '+email+' does not exist in the wallet');
+                console.log('Run the registerUser.js application before retrying');
+                return;
+            }
+    
+            // Create a new gateway for connecting to our peer node.
+            const gateway = new Gateway();
+            await gateway.connect(ccp, { wallet, identity: email, discovery: { enabled: true, asLocalhost: true } });
+    
+            // Get the network (channel) our contract is deployed to.
+            const network = await gateway.getNetwork('mychannel');
+    
+            // Get the contract from the network.
+            const contract = network.getContract('fabcar');
+    
+            // Evaluate the specified transaction.
+            // queryCar transaction - requires 1 argument, ex: ('queryCar', 'CAR4')
+            // queryAllCars transaction - requires no arguments, ex: ('queryAllCars')
+
+            const result = await contract.evaluateTransaction('queryAccType',opt);
             console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
             res.status(200).send({response: JSON.parse(`${result}`)})
     
@@ -65,7 +116,7 @@ app.get('/api/getAllPatients', function(req, res){
 
 
 
-app.get('/api/getPatient', function(req, res){
+app.get('/api/getUser', function(req, res){
     var email = req.query.email;
     async function main() {
         try {
@@ -100,7 +151,59 @@ app.get('/api/getPatient', function(req, res){
             // queryCar transaction - requires 1 argument, ex: ('queryCar', 'CAR4')
             // queryAllCars transaction - requires no arguments, ex: ('queryAllCars')
 
-            const result = await contract.evaluateTransaction('queryPatient',email);
+            const result = await contract.evaluateTransaction('queryUser',email);
+            console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
+            res.status(200).send({response: JSON.parse(`${result}`)})
+    
+        } catch (error) {
+            console.error(`Failed to evaluate transaction: ${error}`);
+            res.status(500).json({error: `${error}`})
+            process.exit(1);
+        }
+    }
+    
+    main();
+    
+}) 
+
+app.get('/api/getHistoryForMarble', function(req, res){
+    
+    var email = req.query.email;
+ 
+    async function main() {
+        try {
+            // load the network configuration
+            const ccpPath = path.resolve(__dirname, '..', '..', 'first-network', 'connection-org1.json');
+            const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+    
+            // Create a new file system based wallet for managing identities.
+            const walletPath = path.join(process.cwd(), 'wallet');
+            const wallet = await Wallets.newFileSystemWallet(walletPath);
+            console.log(`Wallet path: ${walletPath}`);
+    
+            // Check to see if we've already enrolled the user.
+            const identity = await wallet.get(email);
+            if (!identity) {
+                console.log('An identity for the user '+email+' does not exist in the wallet');
+                console.log('Run the registerUser.js application before retrying');
+                return;
+            }
+    
+            // Create a new gateway for connecting to our peer node.
+            const gateway = new Gateway();
+            await gateway.connect(ccp, { wallet, identity: email, discovery: { enabled: true, asLocalhost: true } });
+    
+            // Get the network (channel) our contract is deployed to.
+            const network = await gateway.getNetwork('mychannel');
+    
+            // Get the contract from the network.
+            const contract = network.getContract('fabcar');
+    
+            // Evaluate the specified transaction.
+            // queryCar transaction - requires 1 argument, ex: ('queryCar', 'CAR4')
+            // queryAllCars transaction - requires no arguments, ex: ('queryAllCars')
+
+            const result = await contract.evaluateTransaction('getHistoryForMarble',email);
             console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
             res.status(200).send({response: JSON.parse(`${result}`)})
     
@@ -126,7 +229,7 @@ app.post('/api/register', function(req,res){
     var weight = req.body.weight;
     var gender = req.body.gender;
     var dob = req.body.dob;
-    var option = req.body.option;
+
     console.log(password)
     async function main() {
         try {
@@ -197,9 +300,7 @@ app.post('/api/register', function(req,res){
             // createCar transaction - requires 5 argument, ex: ('createCar', 'CAR12', 'Honda', 'Accord', 'Black', 'Tom')
             // changeCarOwner transaction - requires 2 args , ex: ('changeCarOwner', 'CAR10', 'Dave')
 
-            if(option=="patient")
-            {
-                let patientInfo = {
+            let userInfo = {
                     fullName: fullName,
                     email: email,
                     gender: gender,
@@ -208,29 +309,10 @@ app.post('/api/register', function(req,res){
                     weight: weight,
                     auth: {
                         password: password
-                    },
-                    docType: 'patient'
+                    }
                 }
-                await contract.submitTransaction('createPatient',JSON.stringify(patientInfo));
+                await contract.submitTransaction('createUser',JSON.stringify(userInfo));
                 console.log('Transaction has been submitted');
-            }
-            else{
-                let doctorInfo = {
-                    fullName: fullName,
-                    email: email,
-                    gender: gender,
-                    dob: dob,
-                    height: height,
-                    weight: weight,
-                    auth: {
-                        password: password
-                    },
-                    docType: 'doctor'
-                }
-                await contract.submitTransaction('createDoctor',JSON.stringify(doctorInfo));
-                console.log('Transaction has been submitted');
-
-            }
 
             // Disconnect from the gateway.
             await gateway.disconnect();
@@ -247,6 +329,60 @@ app.post('/api/register', function(req,res){
     
     main();
     
+})
+
+app.post('/api/addUserType', function(req,res){
+    let userDetails = {
+        email: req.body.email,
+        userType: req.body.userType,
+    };
+
+    async function main() {
+        try {
+            // load the network configuration
+            const ccpPath = path.resolve(__dirname, '..', '..', 'first-network', 'connection-org1.json');
+            const ccp = JSON.parse(fs.readFileSync(ccpPath, 'utf8'));
+    
+            // Create a new file system based wallet for managing identities.
+            const walletPath = path.join(process.cwd(), 'wallet');
+            const wallet = await Wallets.newFileSystemWallet(walletPath);
+            console.log(`Wallet path: ${walletPath}`);
+    
+            // Check to see if we've already enrolled the user.
+            const identity = await wallet.get(userDetails.email);
+            if (!identity) {
+                console.log('An identity for the user '+userDetails.email+' does not exist in the wallet');
+                console.log('Run the registerUser.js application before retrying');
+                return;
+            }
+    
+            // Create a new gateway for connecting to our peer node.
+            const gateway = new Gateway();
+            await gateway.connect(ccp, { wallet, identity: userDetails.email, discovery: { enabled: true, asLocalhost: true } });
+    
+            // Get the network (channel) our contract is deployed to.
+            const network = await gateway.getNetwork('mychannel');
+    
+            // Get the contract from the network.
+            const contract = network.getContract('fabcar');
+    
+            await contract.submitTransaction('addUserDetails',JSON.stringify(userDetails));
+            console.log('Transaction has been submitted');
+
+            // Disconnect from the gateway.
+            await gateway.disconnect();
+
+            res.status(200).json({Description: 'User Details added'});
+            
+    
+        } catch (error) {
+            console.error(`Failed to add user details `+userDetails.email+`: ${error}`);
+            res.status(500).json({error: `${error}`})
+            process.exit(1);
+        }
+    }
+    main();
+
 })
 
 app.post('/api/addPatientDetails', function(req,res){
