@@ -14,10 +14,10 @@ CC_SRC_LANGUAGE=${1:-"go"}
 CC_SRC_LANGUAGE=`echo "$CC_SRC_LANGUAGE" | tr [:upper:] [:lower:]`
 
 # Adding this script so that we dont have to delete contents from wallet every time
-full_path=$(realpath $0)
-dir_path=$(dirname $full_path)
-wallet_path=$dir_path/javascript/wallet
-rm -rf $wallet_path/*
+# full_path=$(realpath $0)
+# dir_path=$(dirname $full_path)
+# wallet_path=$dir_path/javascript/wallet
+# rm -rf $wallet_path/*
 
 if [ "$CC_SRC_LANGUAGE" = "go" -o "$CC_SRC_LANGUAGE" = "golang"  ]; then
 	CC_RUNTIME_LANGUAGE=golang
