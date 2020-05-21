@@ -115,7 +115,6 @@ app.get('/api/getAccType', function(req, res){
 }) 
 
 
-
 app.get('/api/getUser', function(req, res){
     var email = req.query.email;
     async function main() {
@@ -558,4 +557,34 @@ app.post('/api/login', function(req,res){
     main();
 
 })
+
+
+app.post('/api/encryptAndUpload', function(req, res){
+    
+
+    async function main() {
+
+        let fileUpload = require('./encryptAndUpload.js');
+
+        res.status(200).json({Description: 'Encrypted'});
+        
+    }  
+    main();
+    
+})
+
+app.post('/api/downloadAndDecrypt', function(req, res){
+    
+
+    async function main() {
+
+        let fileDecrypt = require('./downloadAndDecrypt.js');
+        
+        
+    }  
+    main();
+    res.status(200).send('Decrypted');
+})
+
+
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
