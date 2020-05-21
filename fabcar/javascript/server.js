@@ -573,7 +573,7 @@ app.post('/api/encryptAndUpload', function(req, res){
     
 })
 
-app.post('/api/downloadAndDecrypt', function(req, res){
+app.get('/api/downloadAndDecrypt', function(req, res){
     
 
     async function main() {
