@@ -537,7 +537,7 @@ app.post('/api/login', function(req,res){
             // queryCar transaction - requires 1 argument, ex: ('queryCar', 'CAR4')
             // queryAllCars transaction - requires no arguments, ex: ('queryAllCars')
 
-            const result = await contract.evaluateTransaction('queryPatient',email);
+            const result = await contract.evaluateTransaction('queryUser',email);
             console.log(`Transaction has been evaluated, result is: ${result.toString()}`);
             let parsedResult = JSON.parse(`${result}`);
             if(password == parsedResult.auth.password) {
