@@ -14,7 +14,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-var fileUpload = require('/home/shatabdi/Health-Blockchain/fabcar/javascript/uploadToDrive/encryptAndUpload.js')
+var fileUpload = require('uploadToDrive/encryptAndUpload.js')
 const method = fileUpload.method;
 
 app.post('/api/encryptAndUpload', function(req, res){
